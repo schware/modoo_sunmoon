@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>야시장 매출 증명</title>
+<meta name="description" content="플리마켓과 야시장의 현금 매출을 QR 한 장으로 기록해, 증명이 없어 다음 단계로 가지 못하던 판매자에게 매출 증명을 만들어줍니다.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="번 것을 증명하지 못하면 다음 단계로 갈 수 없습니다">
+<meta property="og:description" content="플리마켓과 야시장에서 현금으로 장사하는 사람이 매출을 증명하지 못해 다음 단계로 가지 못합니다. QR 한 장으로 그 증명을 만듭니다.">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%230F6F62'/%3E%3Cg fill='%23fff'%3E%3Crect x='7' y='7' width='7' height='7' rx='1'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1'/%3E%3Crect x='18' y='18' width='3' height='3'/%3E%3Crect x='22' y='22' width='3' height='3'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --paper:#F6F7F4;
+  --surface:#FFFFFF;
+  --ink:#15191C;
+  --body:#33393E;
+  --muted:#697178;
+  --rule:#D3D7D0;
+  --rule-strong:#A9AFA8;
+  --accent:#0F6F62;
+  --accent-soft:#E2EFEB;
+  --shadow:0 1px 2px rgba(21,25,28,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#121513;
+    --surface:#191D1B;
+    --ink:#F0F2EE;
+    --body:#C9CFC9;
+    --muted:#8E958E;
+    --rule:#2E3431;
+    --rule-strong:#4A524D;
+    --accent:#5FC5B0;
+    --accent-soft:#1B2C28;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#121513;
+  --surface:#191D1B;
+  --ink:#F0F2EE;
+  --body:#C9CFC9;
+  --muted:#8E958E;
+  --rule:#2E3431;
+  --rule-strong:#4A524D;
+  --accent:#5FC5B0;
+  --accent-soft:#1B2C28;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--body);
+  font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  font-size:16px;
+  line-height:1.75;
+  word-break:keep-all;
+}
+.wrap{max-width:41rem;margin:0 auto;padding:0 1.25rem 5rem}
+
+/* ── 공통 타이포 ─────────────────────────── */
+h1,h2,h3{color:var(--ink);text-wrap:balance;margin:0}
+h1{font-size:clamp(1.7rem,5.2vw,2.35rem);font-weight:700;line-height:1.38;letter-spacing:-.02em}
+h2{font-size:1.28rem;font-weight:700;line-height:1.5;letter-spacing:-.01em}
+h3{font-size:1rem;font-weight:600;line-height:1.6}
+p{margin:0}
+strong{color:var(--ink);font-weight:600}
+
+.eyebrow{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.7rem;font-weight:500;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);
+}
+.lede{font-size:1.06rem;color:var(--body)}
+.note{font-size:.875rem;color:var(--muted);line-height:1.7}
+
+/* 영수증 점선 괘선 */
+.tear{border:0;border-top:1px dashed var(--rule-strong);margin:0;opacity:.85}
+
+section{padding:3.25rem 0;border-top:1px dashed var(--rule);display:flex;flex-direction:column;gap:1.5rem}
+section:first-of-type{border-top:0}
+.stack{display:flex;flex-direction:column;gap:.85rem}
+
+/* ── 헤더 ────────────────────────────────── */
+header{padding:3.5rem 0 0;display:flex;flex-direction:column;gap:1.25rem}
+.masthead{
+  display:flex;justify-content:space-between;align-items:baseline;
+  gap:1rem;flex-wrap:wrap;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+}
+.thesis{font-size:1.1rem;color:var(--body)}
+.thesis b{color:var(--accent);font-weight:600}
+
+/* ── 지표 (영수증 금액 줄) ───────────────── */
+.figures{display:flex;flex-direction:column;gap:0}
+.fig{
+  display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:baseline;
+  padding:.7rem 0;border-bottom:1px dotted var(--rule);
+}
+.fig:first-child{border-top:1px dotted var(--rule)}
+.fig dt{font-size:.9rem;color:var(--body)}
+.fig dd{
+  margin:0;font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-variant-numeric:tabular-nums;font-size:.95rem;font-weight:500;color:var(--ink);
+}
+.fig dd small{font-size:.78rem;color:var(--muted);font-weight:400;margin-left:.15rem}
+
+/* ── QR 두 장 ────────────────────────────── */
+.qr-pair{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+@media (max-width:34rem){.qr-pair{grid-template-columns:1fr}}
+.qr{
+  background:var(--surface);border:1px solid var(--rule);border-radius:2px;
+  padding:1.15rem 1.15rem 1.25rem;display:flex;flex-direction:column;gap:.6rem;
+  box-shadow:var(--shadow);
+}
+.qr.ours{border-color:var(--accent);background:var(--accent-soft)}
+.qr .tag{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+}
+.qr.ours .tag{color:var(--accent)}
+.qr h3{font-size:.97rem}
+.qr p{font-size:.85rem;line-height:1.65;color:var(--body)}
+.qr dl{margin:0;display:flex;flex-direction:column;gap:.3rem;font-size:.8rem}
+.qr dl div{display:flex;gap:.5rem}
+.qr dt{color:var(--muted);flex:0 0 3.6rem}
+.qr dd{margin:0;color:var(--body)}
+
+/* ── 흐름 (순서가 실제 정보) ─────────────── */
+ol.flow{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+ol.flow li{
+  display:grid;grid-template-columns:1.6rem 1fr;gap:.85rem;
+  padding:.62rem 0;border-bottom:1px dotted var(--rule);align-items:baseline;
+}
+ol.flow li:first-child{border-top:1px dotted var(--rule)}
+ol.flow .n{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.78rem;color:var(--accent);font-weight:500;font-variant-numeric:tabular-nums;
+}
+ol.flow .t{font-size:.92rem;color:var(--body)}
+ol.flow .t b{color:var(--ink);font-weight:600}
+
+/* ── 두 이유 ─────────────────────────────── */
+.reasons{display:grid;grid-template-columns:1fr 1fr;gap:1.6rem}
+@media (max-width:34rem){.reasons{grid-template-columns:1fr;gap:1.4rem}}
+.reasons h3{margin-bottom:.4rem}
+.reasons p{font-size:.88rem;line-height:1.7}
+
+/* ── 단계 ────────────────────────────────── */
+.phases{display:flex;flex-direction:column}
+.phase{
+  display:grid;grid-template-columns:4.6rem 1fr;gap:1rem;
+  padding:1rem 0;border-bottom:1px dotted var(--rule);
+}
+.phase:first-child{border-top:1px dotted var(--rule)}
+.phase .when{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.76rem;color:var(--muted);font-variant-numeric:tabular-nums;line-height:1.9;
+}
+.phase h3{font-size:.95rem;margin-bottom:.2rem}
+.phase p{font-size:.86rem;line-height:1.7}
+.phase.now h3{color:var(--accent)}
+.badge{
+  display:inline-block;margin-left:.4rem;padding:.05rem .4rem;
+  background:var(--accent-soft);color:var(--accent);border-radius:2px;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.64rem;
+  letter-spacing:.08em;text-transform:uppercase;vertical-align:.1em;font-weight:500;
+}
+
+/* ── 경력 ────────────────────────────────── */
+.career{display:flex;flex-direction:column}
+.career div{
+  display:grid;grid-template-columns:1fr auto;gap:1rem;
+  padding:.45rem 0;border-bottom:1px dotted var(--rule);align-items:baseline;
+}
+.career div:first-child{border-top:1px dotted var(--rule)}
+.career span{font-size:.87rem;color:var(--body)}
+.career em{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-style:normal;
+  font-size:.76rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+
+footer{
+  padding:2.5rem 0 0;border-top:1px dashed var(--rule-strong);
+  display:flex;flex-direction:column;gap:.5rem;
+}
+footer p{font-size:.8rem;color:var(--muted);line-height:1.7}
+
+@media (prefers-reduced-motion:no-preference){
+  a{transition:color .15s ease}
+}
+a{color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="masthead">
+      <span>야시장 · 플리마켓 매출 기록</span>
+      <span>2026</span>
+    </div>
+    <h1>번 것을 증명하지 못하면<br>다음 단계로 갈 수 없습니다.</h1>
+    <p class="thesis">
+      플리마켓과 야시장에서 현금으로 장사하는 사람은 실제로 잘 팔아도 그 사실이 어디에도 남지 않습니다.
+      <b>QR 한 장으로 그 증명을 만듭니다.</b>
+    </p>
+  </header>
+
+  <section>
+    <div class="stack">
+      <span class="eyebrow">문제</span>
+      <h2>돈을 못 버는 것이 아니라, 번 것을 증명하지 못합니다</h2>
+      <p>
+        플리마켓에서 꾸준히 팔던 사람이 자기 매장을 열려면 보증금과 운영자금이 필요합니다.
+        그 과정에서 가장 먼저 요구되는 것은 <strong>얼마나 팔았는지에 대한 증빙</strong>입니다.
+        현금으로만 받았다면 내놓을 자료가 없습니다.
+      </p>
+    </div>
+
+    <dl class="figures">
+      <div class="fig">
+        <dt>무등록사업자가 접근 가능한 운영자금 상한<br><span class="note">미소금융 · 서민금융진흥원</span></dt>
+        <dd>500<small>만 원</small></dd>
+      </div>
+      <div class="fig">
+        <dt>대구 서문시장 야시장 매대 규모</dt>
+        <dd>약 80<small>개</small></dd>
+      </div>
+      <div class="fig">
+        <dt>온누리상품권 환급행사 참여 시장<br><span class="note">현재는 종이 영수증 + 현장 부스 수작업</span></dt>
+        <dd>234<small>개</small></dd>
+      </div>
+    </dl>
+
+    <p class="note">
+      정부가 추진 중인 개인사업자 마이데이터와 소상공인 표준신용평가는
+      <strong>이미 매출 데이터가 있는 사업자</strong>를 전제로 합니다.
+      야시장과 플리마켓 판매자는 애초에 그 출발점의 데이터가 없습니다.
+      우리는 그 정책과 경쟁하지 않고, <strong>정책의 입구</strong>를 만듭니다.
+    </p>
+  </section>
+
+  <section>
+    <div class="stack">
+      <span class="eyebrow">해결</span>
+      <h2>준비물은 스티커 한 장과 화면 하나</h2>
+      <p>전용 단말기도, 고객 앱 설치도 없습니다. 쓰던 휴대폰이나 태블릿이면 됩니다.</p>
+    </div>
+
+    <div class="qr-pair">
+      <div class="qr">
+        <span class="tag">QR 1 · 기존 스티커</span>
+        <h3>간편결제용</h3>
+        <p>제로페이 등 기존 결제 QR. 우리 것이 아닙니다.</p>
+        <dl>
+          <div><dt>금액</dt><dd>페이 앱에서 처리</dd></div>
+          <div><dt>여는 법</dt><dd>페이 앱</dd></div>
+          <div><dt>처리</dt><dd>결제사가 국세청에 자동 전달</dd></div>
+        </dl>
+      </div>
+      <div class="qr ours">
+        <span class="tag">QR 2 · 우리 것 · 화면</span>
+        <h3>현금 거래 기록용</h3>
+        <p>판매자 화면에 금액이 담겨 뜹니다. 고객은 찍고 확인만 합니다.</p>
+        <dl>
+          <div><dt>금액</dt><dd><strong>판매자가 확정</strong></dd></div>
+          <div><dt>여는 법</dt><dd>휴대폰 기본 카메라</dd></div>
+          <div><dt>처리</dt><dd>발급 + 매출 기록 생성</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="stack">
+      <h3>현금 거래는 이렇게 흐릅니다</h3>
+      <ol class="flow">
+        <li><span class="n">01</span><span class="t">고객이 현금을 낸다</span></li>
+        <li><span class="n">02</span><span class="t">판매자가 거치 화면에 <b>금액을 입력</b>한다 — 카드 결제와 같은 순서</span></li>
+        <li><span class="n">03</span><span class="t">그 <b>금액이 담긴 QR</b>이 화면에 뜬다</span></li>
+        <li><span class="n">04</span><span class="t">고객이 기본 카메라로 찍고 확인한다 <b>— 앱 설치 없음</b>, 전화번호는 선택</span></li>
+        <li><span class="n">05</span><span class="t">발급 API를 거쳐 국세청으로, 동시에 <b>매출 기록</b>이 쌓인다</span></li>
+      </ol>
+      <p class="note">
+        <strong>카드 결제가 금액을 파는 쪽에서 확정하는 데는 이유가 있습니다.</strong>
+        고객이 금액을 잘못 넣거나 임의로 바꿀 수 없습니다.
+        거래마다 고유 번호가 생겨 마감 대사와 취소 처리도 정확해집니다.
+        화면을 쓰기 어려운 상황에서는 붙여둔 스티커로 고객이 입력하고
+        판매자가 확인하는 방식으로 내려갑니다.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">유인</span>
+    <div class="reasons">
+      <div>
+        <h3>판매자가 쓰는 이유</h3>
+        <p>
+          <strong>지금</strong> — 현금과 간편결제 거래가 한 번에 정리되어
+          부가세 신고에서 생기는 누락과 실수가 줄어듭니다.
+        </p>
+        <p style="margin-top:.55rem">
+          <strong>나중</strong> — 거래 기록이 쌓이면 설명하기 어려웠던 사업 이력을
+          데이터로 보여줄 수 있습니다.
+        </p>
+      </div>
+      <div>
+        <h3>고객이 QR을 찍는 이유</h3>
+        <p>
+          온누리상품권 <strong>환급 자동화</strong>입니다.
+          지금은 종이 영수증을 들고 부스에 줄을 서야 합니다.
+        </p>
+        <p style="margin-top:.55rem">
+          영수증이 처음부터 디지털이면 줄을 설 필요가 없고,
+          운영주체는 인건비와 부정수급 위험을 줄입니다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="stack">
+      <span class="eyebrow">단계</span>
+      <h2>1단계에는 착수 조건이 없습니다</h2>
+      <p class="note">
+        결제사 제휴도, 정부 시스템 연동도, 마이데이터 시행도 전부 2단계 이후입니다.
+        필요한 외부 계약은 발급 API 하나뿐입니다.
+      </p>
+    </div>
+
+    <div class="phases">
+      <div class="phase now">
+        <span class="when">0–6개월</span>
+        <div>
+          <h3>파일럿<span class="badge">외부 의존 없음</span></h3>
+          <p>야시장 한 곳. 현금 거래 기록, 현금영수증 발급, 운영주체 대시보드.
+             이상거래 탐지는 규칙 기반 — 데이터가 없는 단계에서 AI를 앞세우지 않습니다.</p>
+        </div>
+      </div>
+      <div class="phase">
+        <span class="when">6–18개월</span>
+        <div>
+          <h3>확장</h3>
+          <p>간편결제 데이터를 결합해 완전한 매출 증명을 만듭니다.
+             부가세 신고 자동정리가 이 단계에서 완성됩니다.</p>
+        </div>
+      </div>
+      <div class="phase">
+        <span class="when">18개월~</span>
+        <div>
+          <h3>신용</h3>
+          <p>매출 증명 발급, 마이데이터·표준신용평가 연계.
+             <strong>이 데이터가 쌓여야 신용평가가 가능해지고, 그것이 데이터를 모으는 이유입니다.</strong></p>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      전통시장은 성격이 다릅니다. 이미 사업자등록과 카드 단말기를 갖춘 경우가 많아
+      증명을 새로 만들 필요가 없습니다. 대신 현금 거래를 정리하고 신고하는 일에 손이 많이 갑니다.
+      야시장과 플리마켓에서 기록 체계를 검증한 뒤, 전통시장에서는 <strong>그 업무를 덜어드리는</strong>
+      방향으로 넓혀갑니다.
+    </p>
+  </section>
+
+  <section>
+    <div class="stack">
+      <span class="eyebrow">실행</span>
+      <h2>만들던 것을, 그것이 없는 곳에서</h2>
+      <p>
+        2005년부터 21년간 개발했고 상당 기간을 유통 도메인에서 보냈습니다.
+        제가 만들어 온 시스템은 전부 같은 일을 합니다.
+        <strong>거래를 기록하고, 매장별로 집계하고, 운영자가 볼 수 있게 만드는 것.</strong>
+      </p>
+    </div>
+
+    <div class="career">
+      <div><span>버거킹 · 운영</span><em>2019.10–현재</em></div>
+      <div><span>버거킹 차세대 POS · 직승인</span><em>2018.10–2019.10</em></div>
+      <div><span>모다 아울렛 매출관리</span><em>2017.11–2018.10</em></div>
+      <div><span>형지 아트몰링 매출관리</span><em>2016.08–2017.02</em></div>
+      <div><span>코엑스 매출관리</span><em>2015.02–2017.08</em></div>
+      <div><span>경방 매출관리</span><em>2014.06–2015.01</em></div>
+      <div><span>한화타임월드 제주면세점 구축</span><em>2014.03–2014.05</em></div>
+      <div><span>중소기업 시내면세점 구축</span><em>2013.03–2014.02</em></div>
+      <div><span>한국공항공사 매출관리</span><em>2012.10–2013.03</em></div>
+      <div><span>마리오 아울렛 POS</span><em>2012.02–2012.08</em></div>
+      <div><span>부산 센트럴 스퀘어 POS</span><em>2011.09–2012.12</em></div>
+      <div><span>대성 디큐브 POS</span><em>2011.01–2011.08</em></div>
+    </div>
+
+    <p class="note">
+      백화점과 아울렛, 면세점, 프랜차이즈는 이미 그렇게 돌아갑니다.
+      야시장과 플리마켓에는 그 시스템이 없습니다. 단말기와 구축 비용을 감당할 규모가 아니기 때문입니다.
+      <strong>새 분야에 뛰어드는 것이 아니라, 해오던 일을 규모가 다른 현장에 맞게 다시 설계하는 일입니다.</strong>
+    </p>
+    <p class="note">
+      매출 데이터를 다루는 시스템에서 중요한 것은 화면이 아니라 정합성입니다.
+      거래가 누락되지 않는가, 취소와 환불이 원거래와 연결되는가, 마감 숫자가 맞는가,
+      문제가 생겼을 때 추적이 되는가. 감사 로그를 1단계 필수 항목으로 둔 것도 그 때문입니다.
+    </p>
+  </section>
+
+  <footer>
+    <hr class="tear">
+    <p>
+      검토한 대안과 폐기한 안, 폐기한 이유까지 의사결정 기록으로 관리하고 있습니다.
+      확정한 것과 아직 확정하지 못한 것을 문서상 구분해 둡니다.
+    </p>
+    <p>2026 · 모두의 창업 프로젝트 지원 자료</p>
+  </footer>
+
+</div>
+</body>
+</html>
